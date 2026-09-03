@@ -50,17 +50,18 @@ final class PointerEventBlocker {
 
     func enable() {
         guard tap == nil else { return }
-        let mask: CGEventMask =
-            (1 << CGEventType.mouseMoved.rawValue) |
-            (1 << CGEventType.leftMouseDown.rawValue) |
-            (1 << CGEventType.leftMouseUp.rawValue) |
-            (1 << CGEventType.leftMouseDragged.rawValue) |
-            (1 << CGEventType.rightMouseDown.rawValue) |
-            (1 << CGEventType.rightMouseUp.rawValue) |
-            (1 << CGEventType.scrollWheel.rawValue) |
-            (1 << CGEventType.keyDown.rawValue) |
-            (1 << UInt64(PointerEventBlocker.gestureEventType)) |
-            (1 << UInt64(PointerEventBlocker.dockControlEventType))
+        // Built imperatively: a single OR chain of mixed-width literals is
+        // too much for the type-checker in release builds.
+        let tapTypes: [CGEventType] = [
+            .mouseMoved, .leftMouseDown, .leftMouseUp, .leftMouseDragged,
+            .rightMouseDown, .rightMouseUp, .scrollWheel, .keyDown,
+        ]
+        var mask: CGEventMask = 0
+        for t in tapTypes {
+            mask |= CGEventMask(1) << CGEventMask(t.rawValue)
+        }
+        mask |= CGEventMask(1) << CGEventMask(PointerEventBlocker.gestureEventType)
+        mask |= CGEventMask(1) << CGEventMask(PointerEventBlocker.dockControlEventType)
 
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }

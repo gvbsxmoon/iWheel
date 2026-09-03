@@ -55,5 +55,8 @@ fi
 touch "$APP"   # nudge Finder's icon cache
 
 ditto -c -k --keepParent "$APP" "build/iWheel-${VERSION}.zip"
+# Stable-named copy: attach BOTH to the GitHub release, so
+# releases/latest/download/iWheel.zip always works (website button).
+cp "build/iWheel-${VERSION}.zip" "build/iWheel.zip"
 echo "Built $APP"
-echo "Release archive: build/iWheel-${VERSION}.zip"
+echo "Release archive: build/iWheel-${VERSION}.zip (+ stable-named build/iWheel.zip)"
