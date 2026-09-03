@@ -18,6 +18,8 @@ final class SettingsStore: ObservableObject {
     @Published var dockSpacing: Double { didSet { save() } }
     /// Percent of trackpad travel that slides through all spaces (dock).
     @Published var dockSpan: Double { didSet { save() } }
+    /// How many fingers navigate while the switcher is open (2 or 3).
+    @Published var navFingers: Int { didSet { save() } }
     @Published var cardWidth: Double { didSet { save() } }
     /// Virtual key code + Carbon modifier flags of the open shortcut.
     @Published var hotkeyKeyCode: Int { didSet { save(); hotkeyChanged?() } }
@@ -66,14 +68,16 @@ final class SettingsStore: ObservableObject {
         let storedHold = defaults.object(forKey: "holdSeconds") as? Double
         holdSeconds = (storedHold == nil || storedHold == 0.35) ? 0.15 : storedHold!
         hapticStyle = HapticStyle(rawValue: defaults.string(forKey: "hapticStyle") ?? "") ?? .strong
-        layout = Layout(rawValue: defaults.string(forKey: "layout") ?? "") ?? .wheel
-        // 120 / 100 are the new defaults; migrate values saved under the old
-        // ones and clamp spacing into the new 100...220 range.
+        layout = Layout(rawValue: defaults.string(forKey: "layout") ?? "") ?? .dock
+        // 150 / 120 / 25 are the new defaults; migrate values saved under the
+        // previous defaults and clamp spacing into the 100...220 range.
         let storedSpacing = defaults.object(forKey: "dockSpacing") as? Double
-        dockSpacing = (storedSpacing == nil || storedSpacing == 84) ? 120 : min(max(storedSpacing!, 100), 220)
+        dockSpacing = (storedSpacing == nil || storedSpacing == 84 || storedSpacing == 120) ? 150 : min(max(storedSpacing!, 100), 220)
         let storedCard = defaults.object(forKey: "cardWidth") as? Double
-        cardWidth = (storedCard == nil || storedCard == 68) ? 100 : storedCard!
-        dockSpan = defaults.object(forKey: "dockSpan") as? Double ?? 35
+        cardWidth = (storedCard == nil || storedCard == 68 || storedCard == 100) ? 120 : storedCard!
+        let storedSpan = defaults.object(forKey: "dockSpan") as? Double
+        dockSpan = (storedSpan == nil || storedSpan == 35) ? 25 : storedSpan!
+        navFingers = defaults.object(forKey: "navFingers") as? Int ?? 3
         // Default shortcut: ctrl+option+cmd+W. 13 = kVK_ANSI_W,
         // 6400 = cmdKey(256) | optionKey(2048) | controlKey(4096).
         hotkeyKeyCode = defaults.object(forKey: "hotkeyKeyCode") as? Int ?? 13
@@ -103,6 +107,7 @@ final class SettingsStore: ObservableObject {
         defaults.set(layout.rawValue, forKey: "layout")
         defaults.set(dockSpacing, forKey: "dockSpacing")
         defaults.set(dockSpan, forKey: "dockSpan")
+        defaults.set(navFingers, forKey: "navFingers")
         defaults.set(cardWidth, forKey: "cardWidth")
         defaults.set(hotkeyKeyCode, forKey: "hotkeyKeyCode")
         defaults.set(hotkeyModifiers, forKey: "hotkeyModifiers")

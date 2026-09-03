@@ -23,6 +23,21 @@ struct SettingsView: View {
                 setting("Activation hold",
                         caption: "How long to keep 3 fingers still before the wheel appears. Longer means fewer accidental openings.",
                         value: $settings.holdSeconds, in: 0.15...0.6, format: "%.2fs")
+                VStack(alignment: .leading, spacing: 4) {
+                    Picker(selection: $settings.navFingers) {
+                        Text("3 fingers").tag(3)
+                        Text("2 fingers").tag(2)
+                    } label: {
+                        Text("Navigate with")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .pickerStyle(.segmented)
+                    Text("With 3, you open and keep sliding with the same fingers. With 2, lift one finger after opening to navigate.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 2)
                 ShortcutRecorderRow(settings: settings)
             }
             Section("Appearance") {
@@ -132,7 +147,7 @@ private struct ShortcutRecorderRow: View {
                     recording ? stopRecording() : startRecording()
                 }
             }
-            Text("Opens the switcher from the keyboard and keeps it open: slide with 2 fingers or press Tab to highlight a space, Return confirms, Esc closes. Click and press a new combination including cmd, option or control.")
+            Text("Opens the switcher from the keyboard and keeps it open: slide on the trackpad or press Tab to highlight a space, Return confirms, Esc closes. Click and press a new combination including cmd, option or control.")
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

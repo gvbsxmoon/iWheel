@@ -3,6 +3,22 @@
 All notable changes to iWheel are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-09-03
+
+### Added
+- Navigate with 3 fingers (new default): hold 3 fingers to open, then
+  keep sliding with the same 3 fingers - no lifting. Possible because
+  system gestures are suppressed while the switcher is open. A
+  "Navigate with" picker in Settings > Gestures switches back to the
+  2-finger style
+
+### Changed
+- New defaults: Dock layout, card spacing 150pt, card size 120pt,
+  elasticity 25% (values saved under the previous defaults migrate
+  automatically)
+- Copy no longer hardcodes "2 fingers"; the Help window shows the
+  configured finger count
+
 ## [1.2.0] - 2026-09-03
 
 ### Added

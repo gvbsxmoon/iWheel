@@ -117,18 +117,12 @@ final class WheelController: ObservableObject {
             }
 
             // While the wheel is open the event tap suppresses the system's
-            // own swipe gestures (Spaces, Mission Control), so 3+ fingers
-            // are simply ignored here: they may rest on the pad (as right
-            // after activation) without navigating or closing anything.
-            // Navigation is 2 fingers only: no system gesture exists there
-            // (the cursor is hidden and scrolls are swallowed while open),
-            // and 1 finger is reserved so an accidental brush does not move
-            // the focus.
-            if touching.count >= 3 {
-                smoothed = nil
-                return
-            }
-            guard touching.count == 2 else {
+            // own swipe gestures, so 3 fingers are free to navigate: the
+            // default flow is hold 3 to open and keep sliding with the same
+            // 3 fingers. A Settings picker switches navigation to 2 fingers
+            // for people who prefer the lift-one style. Any other count
+            // rests without navigating.
+            guard touching.count == settings.navFingers else {
                 smoothed = nil
                 return
             }

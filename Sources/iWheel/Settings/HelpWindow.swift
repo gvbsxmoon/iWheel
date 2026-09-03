@@ -13,7 +13,7 @@ struct HelpView: View {
                 step("1. Open it",
                      "Rest 3 fingers STILL on the trackpad for a moment. Or press \(settings.hotkeyDisplay) to open it from the keyboard - that way it stays open until you act.")
                 step("2. Pick a space",
-                     "Slide with 2 fingers: as they travel, the highlight moves through your spaces, with a little haptic click on each one. Prefer the keyboard? Tab steps to the next space.")
+                     "Keep sliding with \(settings.navFingers) fingers: as they travel, the highlight moves through your spaces, with a little haptic click on each one. Prefer the keyboard? Tab steps to the next space.")
                 step("3. Switch",
                      "Lift your fingers and you are there. If you were using Tab, press Return to confirm instead. Landing on the space you started from does nothing.")
                 step("4. Changed your mind?",

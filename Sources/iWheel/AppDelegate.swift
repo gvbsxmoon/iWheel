@@ -49,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.image = Self.makeStatusIcon()
         statusItem.button?.setAccessibilityLabel("iWheel")
         let menu = NSMenu()
-        let hint = NSMenuItem(title: "iWheel - rest 3 fingers, slide with 2, release to go", action: nil, keyEquivalent: "")
+        let hint = NSMenuItem(title: "iWheel - rest 3 fingers, slide, release to go", action: nil, keyEquivalent: "")
         hint.isEnabled = false
         menu.addItem(hint)
         menu.addItem(.separator())

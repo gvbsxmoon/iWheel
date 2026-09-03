@@ -57,7 +57,7 @@ Settings.
 |---|---|
 | Rest 3 fingers still (~0.15s) | Open the switcher |
 | ctrl+option+cmd+W | Open it from the keyboard - stays open until you act |
-| Slide with 2 fingers | Move the highlight through your Spaces |
+| Keep sliding (3 fingers, or 2 in Settings) | Move the highlight through your Spaces |
 | Tab | Step the highlight one Space at a time |
 | Esc | Close without switching |
 | Release | Switch to the highlighted Space |
