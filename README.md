@@ -1,12 +1,15 @@
 # iWheel
 
-The natural way to switch desktops, inspired by the iPod click wheel.
-Hold 3 fingers on the trackpad and your Spaces appear in a wheel.
-Point with 2 fingers, release, you are there. One gesture, fingers
-never leaving the trackpad.
+Hold 3 fingers on the trackpad. Your Spaces appear around your hand.
+Slide, release, you are there. Never lift your hand.
 
-Built for people who run many desktops and are tired of swiping
-across half of them to reach the other half. Up to 10 Spaces.
+macOS gives you one flat swipe between Spaces. Fine with 3, painful
+with 8. iWheel puts every Space one small motion away: a wheel around
+your fingers, or a dock row if that is more your thing. The name comes
+from the iPod click wheel, the last input device that made moving
+around feel this good.
+
+Up to 10 Spaces.
 
 ![iWheel demo](assets/demo.gif)
 
@@ -34,9 +37,14 @@ on first open, right-click > Open to get past Gatekeeper.
 ```sh
 git clone https://github.com/gvbsxmoon/iWheel.git
 cd iWheel
-scripts/release.sh        # produces build/iWheel.app + release zip
-open build/iWheel.app
+scripts/install.sh
 ```
+
+`install.sh` does the whole dance: creates a stable local signing
+identity (first run only, asks for sudo), builds, replaces the copy in
+/Applications, resets permissions only when the signature actually
+changed, and relaunches. For just the artifacts, `scripts/release.sh`
+produces `build/iWheel.app` and the release zip.
 
 On first launch macOS asks for three permissions (see
 [Privacy & permissions](#privacy--permissions)). Grant them, then
@@ -47,26 +55,34 @@ Settings.
 
 | Gesture | Action |
 |---|---|
-| Rest 3 fingers still (~0.15s) | Open the wheel |
-| Point with 2 fingers | Highlight the desktop in that direction |
-| Tab / Shift+Tab | Step the highlight one desktop at a time |
-| Release | Switch to the highlighted desktop |
+| Rest 3 fingers still (~0.15s) | Open the switcher |
+| ctrl+option+cmd+W | Open it from the keyboard - stays open until you act |
+| Slide with 2 fingers | Move the highlight through your Spaces |
+| Tab | Step the highlight one Space at a time |
+| Esc | Close without switching |
+| Release | Switch to the highlighted Space |
+| Return | Switch from the keyboard (after Tab) |
 | Release without moving | Nothing happens (cancel) |
 | Quick 3-finger swipe | Your normal macOS switch - iWheel steps aside |
 
-Pointing is relative to where your fingers were when the wheel opened,
-so small movements are enough. The pointer is hidden and clicks/scrolls
-do not reach the apps underneath while the wheel is open.
+Pointing is relative to where your fingers were when the switcher
+opened, so small movements are enough. The pointer is hidden and
+clicks/scrolls do not reach the apps underneath while it is open.
 
-Desktop previews are cached snapshots (like Mission Control's own
-thumbnails): each desktop shows how it looked the last time you were
-there. A desktop you have not visited yet shows a numbered placeholder.
+Space previews are cached snapshots (like Mission Control's own
+thumbnails): each Space shows how it looked the last time you were
+there. A Space you have not visited yet shows your wallpaper with
+its number.
 
 ## Settings
 
-Click the menu bar icon (circle in a circle) > Settings. Every control
-has a plain-language description: activation hold, movement threshold,
-dead zone, haptic strength, ring size, highlight zoom.
+Click the menu bar icon (three stacked cards) > Settings. Every
+control has a plain-language description: layout (wheel or a
+dock-style row), activation hold, the open shortcut (recordable),
+card size, highlight zoom, ring size or card spacing and elasticity
+depending on the layout, movement threshold, dead zone, haptic
+strength, open at login. A Help window in the same menu walks
+through the whole flow.
 
 Preferences are stored in `~/Library/Preferences/iWheel.plist`.
 
@@ -80,11 +96,14 @@ iWheel needs three permissions, each for one specific job:
   the actual desktop switch, and runs the event filter below.
 - **Screen Recording** - takes the desktop snapshots used as previews.
 
-**The keyboard filter, stated plainly:** while the wheel is open (and
-only then), iWheel installs an event tap that swallows pointer events
-and watches for the Tab key. Key codes are inspected in memory to catch
-Tab; they are never stored, logged, or transmitted. The tap is torn
-down when the wheel closes and dies with the process.
+**The keyboard filter, stated plainly:** while the switcher is open
+(and only then), iWheel installs an event tap that swallows pointer
+events and watches for Tab, Return and Esc. Key codes are inspected in
+memory to catch those three; they are never stored, logged, or
+transmitted. The tap is torn down when the switcher closes and dies
+with the process. The global open shortcut is registered through the
+system hotkey API (RegisterEventHotKey), which delivers only that
+exact combination - no event tap exists while the switcher is closed.
 
 **Previews:** snapshots live in RAM only, are never written to disk,
 never leave your machine, and are purged when the screen locks or
@@ -106,10 +125,10 @@ release needs re-verification. See [SECURITY.md](SECURITY.md).
 
 ## Known limitations
 
-- Max 10 desktops reachable (ctrl+1..9 and ctrl+0 have no defaults
+- Max 10 Spaces reachable (ctrl+1..9 and ctrl+0 have no defaults
   beyond that)
-- Single display: with multiple monitors the wheel shows and switches
-  the first display's Spaces
+- Single display: with multiple monitors the switcher shows and
+  switches the first display's Spaces
 - Fullscreen-app Spaces are not shown (they have no ctrl+N shortcut)
 - The binary is unsigned: macOS ties permissions to the code hash, so
   rebuilding may reset them - re-grant and relaunch

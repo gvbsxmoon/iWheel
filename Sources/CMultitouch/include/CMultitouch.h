@@ -19,7 +19,7 @@ typedef struct {
     int frame;
     double timestamp;
     int identifier;
-    int state;              // 4 = finger touching the pad
+    int state;              // touch phase: 3..5 = in contact (4 = stable touch), not a finger count
     int fingerId;
     int handId;
     MTVector normalized;    // position in [0,1] x [0,1], origin bottom-left

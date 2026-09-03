@@ -49,4 +49,23 @@ public enum SelectionLogic {
         guard count > 0 else { return 0 }
         return (current + (backwards ? -1 : 1) + count) % count
     }
+
+    /// Dock-layout selection: rawPosition is a continuous card index
+    /// (anchor + horizontal displacement * gain). Same hysteresis idea as
+    /// the wheel, in card units: the neighbor must be clearly closer.
+    public static func updatedLinearSelection(
+        rawPosition: Double,
+        current: Int,
+        count: Int,
+        hysteresis: Double
+    ) -> Int? {
+        guard count > 0 else { return nil }
+        let clamped = min(max(rawPosition, 0), Double(count - 1))
+        let candidate = Int(clamped.rounded())
+        guard candidate != current, candidate >= 0, candidate < count else { return nil }
+
+        let candidateDistance = abs(clamped - Double(candidate))
+        let currentDistance = abs(clamped - Double(current))
+        return candidateDistance + hysteresis < currentDistance ? candidate : nil
+    }
 }

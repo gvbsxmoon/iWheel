@@ -1,15 +1,21 @@
 import AppKit
 import CoreGraphics
 
-/// Swallows pointer events while the wheel is latched open, so single-finger
-/// scrubbing does not move the cursor or click through the overlay.
+/// Swallows pointer events while the wheel is open, so 2-finger pointing
+/// does not move the cursor, scroll, or click through the overlay.
 /// A physical click while active is reported as a commit gesture.
 final class PointerEventBlocker {
     var onSwallowedClick: (() -> Void)?
     /// Tab / shift+Tab while the wheel is open steps the selection.
     var onTab: ((_ backwards: Bool) -> Void)?
+    /// Esc while the wheel is open cancels it.
+    var onEscape: (() -> Void)?
+    /// Return while the wheel is open commits the selection.
+    var onReturn: (() -> Void)?
 
-    static let tabKeycode: Int64 = 48 // physical Tab position, layout-independent
+    static let tabKeycode: Int64 = 48    // physical Tab position, layout-independent
+    static let escapeKeycode: Int64 = 53 // physical Esc position
+    static let returnKeycode: Int64 = 36 // physical Return position
 
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -41,10 +47,18 @@ final class PointerEventBlocker {
                 return Unmanaged.passUnretained(event)
             }
             if type == .keyDown {
-                // The keycode is inspected only to catch Tab and is never
-                // stored, logged, or transmitted. Every other key passes
-                // through untouched.
+                // Key codes are inspected only to catch Tab and Esc and are
+                // never stored, logged, or transmitted. Every other key
+                // passes through untouched.
                 let keycode = event.getIntegerValueField(.keyboardEventKeycode)
+                if keycode == PointerEventBlocker.escapeKeycode {
+                    DispatchQueue.main.async { blocker.onEscape?() }
+                    return nil
+                }
+                if keycode == PointerEventBlocker.returnKeycode {
+                    DispatchQueue.main.async { blocker.onReturn?() }
+                    return nil
+                }
                 guard keycode == PointerEventBlocker.tabKeycode else { return Unmanaged.passUnretained(event) }
                 let backwards = event.flags.contains(.maskShift)
                 DispatchQueue.main.async { blocker.onTab?(backwards) }

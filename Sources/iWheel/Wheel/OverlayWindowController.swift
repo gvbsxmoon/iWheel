@@ -23,7 +23,18 @@ final class OverlayWindowController {
             panel = p
         }
         guard let panel, let screen = NSScreen.main else { return }
-        let size = NSSize(width: WheelView.overlaySide, height: WheelView.overlaySide)
+        let size: NSSize
+        if settings.layout == .dock {
+            let dock = WheelView.dockPanelSize(
+                spacing: settings.dockSpacing,
+                count: controller.spaces.count,
+                cardWidth: settings.cardWidth,
+                zoom: settings.zoomScale
+            )
+            size = NSSize(width: dock.width, height: dock.height)
+        } else {
+            size = NSSize(width: WheelView.overlaySide, height: WheelView.overlaySide)
+        }
         let origin = NSPoint(
             x: screen.frame.midX - size.width / 2,
             y: screen.frame.midY - size.height / 2

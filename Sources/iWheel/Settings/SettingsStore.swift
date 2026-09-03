@@ -9,6 +9,23 @@ final class SettingsStore: ObservableObject {
         var id: String { rawValue }
     }
 
+    enum Layout: String, CaseIterable, Identifiable {
+        case wheel, dock
+        var id: String { rawValue }
+    }
+
+    @Published var layout: Layout { didSet { save() } }
+    @Published var dockSpacing: Double { didSet { save() } }
+    /// Percent of trackpad travel that slides through all spaces (dock).
+    @Published var dockSpan: Double { didSet { save() } }
+    @Published var cardWidth: Double { didSet { save() } }
+    /// Virtual key code + Carbon modifier flags of the open shortcut.
+    @Published var hotkeyKeyCode: Int { didSet { save(); hotkeyChanged?() } }
+    @Published var hotkeyModifiers: Int { didSet { save(); hotkeyChanged?() } }
+    @Published var hotkeyDisplay: String { didSet { save() } }
+    /// Set by the AppDelegate to re-register the Carbon hotkey on change.
+    var hotkeyChanged: (() -> Void)?
+
     @Published var ringRadius: Double { didSet { save() } }
     @Published var zoomScale: Double { didSet { save() } }
     @Published var hysteresisDegrees: Double { didSet { save() } }
@@ -49,6 +66,19 @@ final class SettingsStore: ObservableObject {
         let storedHold = defaults.object(forKey: "holdSeconds") as? Double
         holdSeconds = (storedHold == nil || storedHold == 0.35) ? 0.15 : storedHold!
         hapticStyle = HapticStyle(rawValue: defaults.string(forKey: "hapticStyle") ?? "") ?? .strong
+        layout = Layout(rawValue: defaults.string(forKey: "layout") ?? "") ?? .wheel
+        // 120 / 100 are the new defaults; migrate values saved under the old
+        // ones and clamp spacing into the new 100...220 range.
+        let storedSpacing = defaults.object(forKey: "dockSpacing") as? Double
+        dockSpacing = (storedSpacing == nil || storedSpacing == 84) ? 120 : min(max(storedSpacing!, 100), 220)
+        let storedCard = defaults.object(forKey: "cardWidth") as? Double
+        cardWidth = (storedCard == nil || storedCard == 68) ? 100 : storedCard!
+        dockSpan = defaults.object(forKey: "dockSpan") as? Double ?? 35
+        // Default shortcut: ctrl+option+cmd+W. 13 = kVK_ANSI_W,
+        // 6400 = cmdKey(256) | optionKey(2048) | controlKey(4096).
+        hotkeyKeyCode = defaults.object(forKey: "hotkeyKeyCode") as? Int ?? 13
+        hotkeyModifiers = defaults.object(forKey: "hotkeyModifiers") as? Int ?? 6400
+        hotkeyDisplay = defaults.string(forKey: "hotkeyDisplay") ?? "⌃⌥⌘W"
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
@@ -70,5 +100,12 @@ final class SettingsStore: ObservableObject {
         defaults.set(deadZone, forKey: "deadZone")
         defaults.set(holdSeconds, forKey: "holdSeconds")
         defaults.set(hapticStyle.rawValue, forKey: "hapticStyle")
+        defaults.set(layout.rawValue, forKey: "layout")
+        defaults.set(dockSpacing, forKey: "dockSpacing")
+        defaults.set(dockSpan, forKey: "dockSpan")
+        defaults.set(cardWidth, forKey: "cardWidth")
+        defaults.set(hotkeyKeyCode, forKey: "hotkeyKeyCode")
+        defaults.set(hotkeyModifiers, forKey: "hotkeyModifiers")
+        defaults.set(hotkeyDisplay, forKey: "hotkeyDisplay")
     }
 }

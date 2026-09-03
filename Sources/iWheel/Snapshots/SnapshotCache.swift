@@ -80,7 +80,10 @@ final class SnapshotCache: ObservableObject {
             config.height = Int(Double(display.height) * scale)
             config.showsCursor = false
 
-            let filter = SCContentFilter(display: display, excludingWindows: [])
+            // Excluding our own windows makes captures safe while the wheel
+            // overlay is visible, so the current desktop can refresh live.
+            let ourWindows = content.windows.filter { $0.owningApplication?.processID == getpid() }
+            let filter = SCContentFilter(display: display, excludingWindows: ourWindows)
             let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
             images[spaceID] = image
         } catch {

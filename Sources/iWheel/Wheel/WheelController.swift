@@ -46,6 +46,14 @@ final class WheelController: ObservableObject {
     private var tabLockArm = false
     private var tabLockPoint: (x: Double, y: Double)?
     private let tabUnlockDistance = 0.08
+    /// Dock layout: the card index anchored to the activation point.
+    private var dockAnchorIndex = 0
+    /// Keyboard-opened (latched) mode: the wheel stays open with no fingers.
+    /// The pointing center is set by the first touch, and release-commit
+    /// only arms once navigation has actually happened.
+    private var latched = false
+    private var latchedAwaitingCenter = false
+    private var hasNavigated = false
 
     let settings: SettingsStore
     private let spaceManager: SpaceManager
@@ -61,6 +69,14 @@ final class WheelController: ObservableObject {
         self.snapshots = snapshots
         self.settings = settings
         blocker.onSwallowedClick = { [weak self] in
+            guard let self, self.state == .wheel else { return }
+            self.commit()
+        }
+        blocker.onEscape = { [weak self] in
+            guard let self, self.state == .wheel else { return }
+            self.close()
+        }
+        blocker.onReturn = { [weak self] in
             guard let self, self.state == .wheel else { return }
             self.commit()
         }
@@ -90,7 +106,16 @@ final class WheelController: ObservableObject {
         case .wheel:
             guard !touching.isEmpty else { return } // release handled by watchdog
             lastTouchTime = CACurrentMediaTime()
+            hasNavigated = true
             let c = centroid(of: touching)
+
+            // Latched (keyboard) open: no fingers were down at activation,
+            // so the pointing center is wherever the first touch lands.
+            if latchedAwaitingCenter {
+                wheelCenter = c
+                dockAnchorIndex = selectedIndex
+                latchedAwaitingCenter = false
+            }
 
             // Field-tested: macOS recognizes 3-finger system gestures even
             // while the wheel is open, and they cannot be blocked app-side.
@@ -165,12 +190,24 @@ final class WheelController: ObservableObject {
 
     // MARK: - Wheel lifecycle
 
+    /// Keyboard shortcut entry point: toggles the wheel in latched mode.
+    func toggleLatched() {
+        if state == .wheel {
+            close()
+        } else if state == .idle {
+            latched = true
+            latchedAwaitingCenter = true
+            openWheel(at: (0.5, 0.5))
+        }
+    }
+
     private func openWheel(at activationCenter: (x: Double, y: Double)) {
         resetHold()
         spaces = spaceManager.userSpaces()
         guard !spaces.isEmpty else { return }
 
         selectedIndex = spaces.firstIndex(where: { $0.isCurrent }) ?? 0
+        dockAnchorIndex = selectedIndex
         lastTouchTime = CACurrentMediaTime()
         smoothed = nil
         multiFingerRef = nil
@@ -184,10 +221,16 @@ final class WheelController: ObservableObject {
         blocker.enable()
         cursor.hide()
         settings.performHaptic()
+        // Refresh the current desktop's preview right away: our windows are
+        // excluded from the capture, so the wheel itself is not in the shot.
+        Task { await snapshots.captureCurrent() }
 
         watchdog = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.state == .wheel else { return }
+                // Latched mode stays open with no fingers until the user
+                // navigates (then release commits) or presses Esc/Return.
+                if self.latched && !self.hasNavigated { return }
                 if CACurrentMediaTime() - self.lastTouchTime > self.releaseCommitSeconds {
                     self.commit()
                 }
@@ -217,6 +260,24 @@ final class WheelController: ObservableObject {
             s = raw
         }
         smoothed = s
+
+        if settings.layout == .dock {
+            // Horizontal mapping: 70% of the pad width sweeps all cards,
+            // anchored at the activation point on the current desktop.
+            // Elasticity: dockSpan% of the trackpad slides through all
+            // spaces. Lower span = snappier.
+            let gain = Double(spaces.count) / (settings.dockSpan / 100.0)
+            let raw = Double(dockAnchorIndex) + (s.x - wheelCenter.x) * gain
+            guard let updated = SelectionLogic.updatedLinearSelection(
+                rawPosition: raw,
+                current: selectedIndex,
+                count: spaces.count,
+                hysteresis: 0.15
+            ) else { return }
+            selectedIndex = updated
+            settings.performHaptic()
+            return
+        }
 
         // Hand-relative compass: translate so the activation point becomes
         // the center SelectionLogic expects at (0.5, 0.5).
@@ -251,7 +312,7 @@ final class WheelController: ObservableObject {
             return
         }
         if target.index > switcher.maxReachableIndex {
-            hud.show("Desktop \(target.index) is beyond \(switcher.maxReachableIndex): not reachable via ctrl+N shortcuts")
+            hud.show("Space \(target.index) is beyond \(switcher.maxReachableIndex): not reachable via ctrl+N shortcuts")
             return
         }
         switcher.switchTo(index: target.index)
@@ -264,6 +325,9 @@ final class WheelController: ObservableObject {
         resetHold()
         smoothed = nil
         multiFingerRef = nil
+        latched = false
+        latchedAwaitingCenter = false
+        hasNavigated = false
         watchdog?.invalidate()
         watchdog = nil
         blocker.disable()
