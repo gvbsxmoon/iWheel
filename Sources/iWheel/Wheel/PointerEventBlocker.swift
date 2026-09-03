@@ -17,6 +17,29 @@ final class PointerEventBlocker {
     static let escapeKeycode: Int64 = 53 // physical Esc position
     static let returnKeycode: Int64 = 36 // physical Return position
 
+    // Private CGEvent plumbing for system trackpad gestures (Spaces swipe,
+    // Mission Control, App Expose). The Dock consumes these as private
+    // CGEvents of type 30 (DockControl, paired with type 29 companions), so
+    // a filtering tap that returns nil suppresses the gesture BEFORE the
+    // Dock acts on it. Field indices are reverse-engineered but stable in
+    // practice; the technique is the one proven by joshuarli/iss and
+    // mmathys/noswoosh on macOS 26/27. We only ever suppress (never
+    // synthesize), which is the simple, durable side of that mechanism.
+    private static let gestureEventType: Int64 = 29      // kCGSEventGesture
+    private static let dockControlEventType: Int64 = 30  // kCGSEventDockControl
+    private static let realTypeField = CGEventField(rawValue: 55)!
+    private static let hidTypeField = CGEventField(rawValue: 110)!
+    private static let phaseField = CGEventField(rawValue: 132)!
+    private static let dockSwipeHIDType: Int64 = 23
+    private static let phaseBegan: Int64 = 1
+    private static let phaseEnded: Int64 = 4
+    private static let phaseCancelled: Int64 = 8
+
+    /// True while a system swipe that BEGAN under our tap is being swallowed.
+    /// A gesture already in flight when the wheel opened is passed through,
+    /// so the Dock is never left with a half-delivered gesture.
+    private var suppressingSwipe = false
+
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
@@ -35,7 +58,9 @@ final class PointerEventBlocker {
             (1 << CGEventType.rightMouseDown.rawValue) |
             (1 << CGEventType.rightMouseUp.rawValue) |
             (1 << CGEventType.scrollWheel.rawValue) |
-            (1 << CGEventType.keyDown.rawValue)
+            (1 << CGEventType.keyDown.rawValue) |
+            (1 << UInt64(PointerEventBlocker.gestureEventType)) |
+            (1 << UInt64(PointerEventBlocker.dockControlEventType))
 
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
@@ -44,6 +69,33 @@ final class PointerEventBlocker {
             // re-enable, or the wheel silently stops swallowing input.
             if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
                 DispatchQueue.main.async { blocker.reenable() }
+                return Unmanaged.passUnretained(event)
+            }
+            // System trackpad gestures (Spaces swipe, Mission Control, App
+            // Expose): swallow them while the wheel is open, so the wheel
+            // owns the trackpad completely. Only gestures that BEGIN while
+            // we are active are suppressed; one already in flight completes
+            // natively so the Dock's gesture state stays consistent.
+            let rawType = Int64(type.rawValue)
+            if rawType == PointerEventBlocker.gestureEventType || rawType == PointerEventBlocker.dockControlEventType {
+                let realType = event.getIntegerValueField(PointerEventBlocker.realTypeField)
+                if realType == PointerEventBlocker.dockControlEventType,
+                   event.getIntegerValueField(PointerEventBlocker.hidTypeField) == PointerEventBlocker.dockSwipeHIDType {
+                    let phase = event.getIntegerValueField(PointerEventBlocker.phaseField)
+                    if phase == PointerEventBlocker.phaseBegan {
+                        blocker.suppressingSwipe = true
+                        return nil
+                    }
+                    guard blocker.suppressingSwipe else { return Unmanaged.passUnretained(event) }
+                    if phase == PointerEventBlocker.phaseEnded || phase == PointerEventBlocker.phaseCancelled {
+                        blocker.suppressingSwipe = false
+                    }
+                    return nil
+                }
+                // Companion gesture events paired with a suppressed swipe.
+                if realType == PointerEventBlocker.gestureEventType, blocker.suppressingSwipe {
+                    return nil
+                }
                 return Unmanaged.passUnretained(event)
             }
             if type == .keyDown {
@@ -88,6 +140,7 @@ final class PointerEventBlocker {
     }
 
     func disable() {
+        suppressingSwipe = false
         if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
         if let runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes) }
         tap = nil

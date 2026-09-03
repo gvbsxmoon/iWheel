@@ -63,7 +63,7 @@ Settings.
 | Release | Switch to the highlighted Space |
 | Return | Switch from the keyboard (after Tab) |
 | Release without moving | Nothing happens (cancel) |
-| Quick 3-finger swipe | Your normal macOS switch - iWheel steps aside |
+| Quick 3-finger swipe | Wheel closed: your normal macOS switch. Wheel open: ignored, the wheel stays in charge |
 
 Pointing is relative to where your fingers were when the switcher
 opened, so small movements are enough. The pointer is hidden and
@@ -98,12 +98,16 @@ iWheel needs three permissions, each for one specific job:
 
 **The keyboard filter, stated plainly:** while the switcher is open
 (and only then), iWheel installs an event tap that swallows pointer
-events and watches for Tab, Return and Esc. Key codes are inspected in
+events, watches for Tab, Return and Esc, and suppresses the system's
+own trackpad swipe gestures (Spaces swipe, Mission Control) so they
+cannot fire mid-interaction - a swipe already in progress when the
+switcher opens still completes natively. Key codes are inspected in
 memory to catch those three; they are never stored, logged, or
 transmitted. The tap is torn down when the switcher closes and dies
-with the process. The global open shortcut is registered through the
-system hotkey API (RegisterEventHotKey), which delivers only that
-exact combination - no event tap exists while the switcher is closed.
+with the process, so your gestures are back to fully native the moment
+it closes. The global open shortcut is registered through the system
+hotkey API (RegisterEventHotKey), which delivers only that exact
+combination - no event tap exists while the switcher is closed.
 
 **Previews:** snapshots live in RAM only, are never written to disk,
 never leave your machine, and are purged when the screen locks or

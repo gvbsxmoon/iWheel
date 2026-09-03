@@ -3,6 +3,22 @@
 All notable changes to iWheel are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-09-03
+
+### Added
+- While the switcher is open, the system's own trackpad swipe gestures
+  (Spaces swipe, Mission Control) are suppressed, so they can no longer
+  fire mid-interaction. The suppression lives and dies with the overlay's
+  event tap: gestures are fully native the instant it closes, and a swipe
+  already in progress when it opens still completes natively. Uses the
+  DockControl event interception technique proven by joshuarli/iss and
+  mmathys/noswoosh - no system settings are touched
+
+### Changed
+- 3 fingers resting or moving while the switcher is open are now simply
+  ignored (previously a 3-finger drift closed it to let the system
+  gesture win - no longer needed)
+
 ## [1.1.0] - 2026-09-03
 
 ### Added

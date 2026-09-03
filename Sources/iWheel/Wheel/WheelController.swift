@@ -36,7 +36,6 @@ final class WheelController: ObservableObject {
     /// swipe: pre-activation the wheel stays closed, post-activation it
     /// closes and lets the native gesture win.
     private let swipeCancelDistance = 0.05
-    private var multiFingerRef: (x: Double, y: Double)?
     /// The compass center: where the 3 fingers were held at activation,
     /// so pointing is relative to the hand, not to the pad center.
     private var wheelCenter: (x: Double, y: Double) = (0.5, 0.5)
@@ -117,29 +116,18 @@ final class WheelController: ObservableObject {
                 latchedAwaitingCenter = false
             }
 
-            // Field-tested: macOS recognizes 3-finger system gestures even
-            // while the wheel is open, and they cannot be blocked app-side.
-            // So 3+ fingers NEVER navigate: they may rest (as right after
-            // activation), but any real movement means a system gesture is
-            // coming - close and let it win. Navigation is 1-2 fingers,
-            // which have no system space gesture (the cursor is hidden and
-            // scroll events are swallowed while open).
+            // While the wheel is open the event tap suppresses the system's
+            // own swipe gestures (Spaces, Mission Control), so 3+ fingers
+            // are simply ignored here: they may rest on the pad (as right
+            // after activation) without navigating or closing anything.
+            // Navigation is 2 fingers only: no system gesture exists there
+            // (the cursor is hidden and scrolls are swallowed while open),
+            // and 1 finger is reserved so an accidental brush does not move
+            // the focus.
             if touching.count >= 3 {
-                if let ref = multiFingerRef {
-                    if hypot(c.x - ref.x, c.y - ref.y) > swipeCancelDistance {
-                        close()
-                        return
-                    }
-                } else {
-                    multiFingerRef = c
-                }
                 smoothed = nil
                 return
             }
-            multiFingerRef = nil
-            // Navigation is 2 fingers only: no system space gesture exists
-            // for 2 fingers (scroll is swallowed while open), and 1 finger
-            // is reserved so an accidental brush does not move the focus.
             guard touching.count == 2 else {
                 smoothed = nil
                 return
@@ -210,7 +198,6 @@ final class WheelController: ObservableObject {
         dockAnchorIndex = selectedIndex
         lastTouchTime = CACurrentMediaTime()
         smoothed = nil
-        multiFingerRef = nil
         wheelCenter = activationCenter
         tabLockArm = false
         tabLockPoint = nil
@@ -324,7 +311,6 @@ final class WheelController: ObservableObject {
         waitingForClear = true
         resetHold()
         smoothed = nil
-        multiFingerRef = nil
         latched = false
         latchedAwaitingCenter = false
         hasNavigated = false

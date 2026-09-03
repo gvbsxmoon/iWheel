@@ -17,7 +17,7 @@ struct HelpView: View {
                 step("3. Switch",
                      "Lift your fingers and you are there. If you were using Tab, press Return to confirm instead. Landing on the space you started from does nothing.")
                 step("4. Changed your mind?",
-                     "Press Esc, or just release without moving. A quick 3-finger swipe always wins: iWheel steps aside and macOS switches natively.")
+                     "Press Esc, or just release without moving. While the switcher is open it owns the trackpad: system swipes wait their turn and are back the instant it closes.")
 
                 Divider()
 

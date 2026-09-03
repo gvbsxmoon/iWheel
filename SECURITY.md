@@ -12,13 +12,17 @@ can build and launch it, but private-API behavior there is unverified.
 ## Threat model - what iWheel can do and what it does
 
 **Session event tap (the sensitive one).** While the wheel overlay is
-open, iWheel runs a `CGEventTap` that swallows pointer events and
-inspects key codes to catch Tab. This is technically a keyboard
-interception point, so the guarantees are explicit:
+open, iWheel runs a `CGEventTap` that swallows pointer events, inspects
+key codes to catch Tab, Return and Esc, and suppresses the system's own
+trackpad swipe gestures (Spaces swipe, Mission Control) so they cannot
+fire mid-interaction. This is technically a keyboard interception point,
+so the guarantees are explicit:
 
 - the tap exists only between wheel-open and wheel-close;
-- key codes are compared against Tab in memory and never stored, logged,
-  or transmitted; all non-Tab keys pass through untouched;
+- key codes are compared against Tab, Return and Esc in memory and never
+  stored, logged, or transmitted; all other keys pass through untouched;
+- gesture suppression only swallows swipes that BEGIN while the wheel is
+  open; one already in flight completes natively;
 - if macOS disables the tap (timeout / user input), it is re-enabled or
   input simply flows normally - it can never eat input while closed;
 - a crash kills the tap with the process (macOS removes taps of dead
