@@ -103,23 +103,12 @@ struct WheelView: View {
                 Image(decorative: wallpaper, scale: 1)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                Text(space.label)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .padding(.horizontal, 6)
-                    .foregroundStyle(.white.opacity(0.9))
-                    .shadow(color: .black.opacity(0.7), radius: 3)
             } else {
                 LinearGradient(
                     colors: [Color(white: 0.30), Color(white: 0.16)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                Text(space.label)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .padding(.horizontal, 6)
-                    .foregroundStyle(.white.opacity(0.7))
             }
         }
         .frame(width: CGFloat(settings.cardWidth), height: CGFloat(settings.cardWidth) * 42.0 / 68.0)
