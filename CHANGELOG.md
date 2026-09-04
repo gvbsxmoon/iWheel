@@ -3,6 +3,43 @@
 All notable changes to iWheel are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - 2026-09-04
+
+### Added
+- Scroll direction setting (Settings > Gestures), natural by default:
+  natural slides the row like the system gesture, so moving left
+  reaches the space on the right; inverted moves the highlight with
+  your fingers, which was the previous behavior
+- Dock carousel: with many spaces the row is capped at 75% of the
+  screen and shifts to keep the highlight centered, with a fade on the
+  overflowing sides, instead of spilling past the display edges
+- Diagnostics section in Settings: the three permissions with live
+  status and a button that opens the exact System Settings pane
+- Failure messages are now plain language a non-technical user can act
+  on (including the 10-space ceiling of macOS keyboard shortcuts), and
+  a failed switch silently repairs the Mission Control hotkey and
+  retries once before showing anything
+
+### Changed
+- Space previews are captured only in quiet moments: one shot per
+  switch taken when the slide animation is over (no more
+  half-transition frames), never while the switcher is on screen, and
+  never behind the lock screen. Fixes previews attributed to the wrong
+  space when switching quickly, the switcher appearing in its own
+  previews, and stutter from captures competing with the animation
+- The space number below the dock derives its distance from the zoomed
+  card height, so large zooms no longer crowd it
+
+### Removed
+- The ring layout, with its picker and settings (ring size, movement
+  threshold, dead zone). Spaces are ordered and the dock matches how
+  Mission Control presents them; one layout, one mental model. Stored
+  keys from the ring era are cleaned up at launch
+
+### Fixed
+- The switcher no longer opens invisibly behind Mission Control
+- Previews for deleted spaces are pruned from memory
+
 ## [1.3.0] - 2026-09-03
 
 ### Added
