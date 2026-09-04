@@ -1,8 +1,7 @@
 import SwiftUI
 
 struct WheelView: View {
-    /// Overlay panel sizes; OverlayWindowController sizes the panel from these.
-    static let overlaySide: CGFloat = 680
+    /// Overlay panel height; OverlayWindowController sizes the panel from these.
     static let dockHeight: CGFloat = 320
 
     static func dockContentWidth(spacing: Double, count: Int, cardWidth: Double, zoom: Double) -> CGFloat {
@@ -21,39 +20,9 @@ struct WheelView: View {
     @ObservedObject var snapshots: SnapshotCache
     @ObservedObject var settings: SettingsStore
 
-    private var ringRadius: CGFloat { CGFloat(settings.ringRadius) }
-
     var body: some View {
-        Group {
-            if settings.layout == .dock {
-                dockBody
-            } else {
-                wheelBody
-            }
-        }
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: controller.selectedIndex)
-    }
-
-    // MARK: - Wheel layout
-
-    private var wheelBody: some View {
-        ZStack {
-            centerLabel
-
-            ForEach(Array(controller.spaces.enumerated()), id: \.element.id) { index, space in
-                let selected = index == controller.selectedIndex
-                let count = max(controller.spaces.count, 1)
-                // Desktop 1 at 12 o'clock, clockwise.
-                let degrees = (Double(index) / Double(count)) * 360.0 - 90.0
-                let rad = degrees * .pi / 180
-
-                card(for: space, at: index, selected: selected)
-                    .scaleEffect(selected ? CGFloat(settings.zoomScale) : 1.0)
-                    .offset(x: CGFloat(cos(rad)) * ringRadius, y: CGFloat(sin(rad)) * ringRadius)
-                    .zIndex(selected ? 1 : 0)
-            }
-        }
-        .frame(width: Self.overlaySide, height: Self.overlaySide)
+        dockBody
+            .animation(.spring(response: 0.25, dampingFraction: 0.85), value: controller.selectedIndex)
     }
 
     // MARK: - Dock layout
@@ -120,14 +89,6 @@ struct WheelView: View {
     }
 
     // MARK: - Shared pieces
-
-    private var centerLabel: some View {
-        Text("\(controller.selectedIndex + 1)")
-            .font(.system(size: 56, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white)
-            .contentTransition(.numericText())
-            .shadow(color: .black.opacity(0.6), radius: 8)
-    }
 
     private func card(for space: SpaceInfo, at index: Int, selected: Bool) -> some View {
         ZStack {

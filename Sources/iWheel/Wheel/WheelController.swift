@@ -4,13 +4,11 @@ import QuartzCore
 import iWheelCore
 
 /// The gesture engine.
-/// - Rest THREE fingers still on the pad for the configured hold: the wheel
-///   opens. A moving 3-finger contact is left to macOS, so quick system
-///   swipes keep switching desktop natively.
-/// - Point with TWO fingers: the bearing relative to where the wheel was
-///   opened highlights that desktop, with smoothing and angular hysteresis.
-///   3+ fingers never navigate: any drift closes the wheel in favor of the
-///   system gesture, which cannot be blocked app-side.
+/// - Rest THREE fingers still on the pad for the configured hold: the
+///   switcher opens. A moving 3-finger contact is left to macOS, so quick
+///   system swipes keep switching desktop natively.
+/// - Slide horizontally (3 fingers by default, 2 via Settings) to move the
+///   highlight along the dock, anchored where the fingers were held.
 /// - Tab / shift+Tab: step the highlight.
 /// - RELEASE: switch to the highlighted desktop. Releasing on the current
 ///   desktop does nothing, which doubles as cancel.
@@ -246,38 +244,17 @@ final class WheelController: ObservableObject {
         }
         smoothed = s
 
-        if settings.layout == .dock {
-            // Horizontal mapping: 70% of the pad width sweeps all cards,
-            // anchored at the activation point on the current desktop.
-            // Elasticity: dockSpan% of the trackpad slides through all
-            // spaces. Lower span = snappier.
-            let gain = Double(spaces.count) / (settings.dockSpan / 100.0)
-            let raw = Double(dockAnchorIndex) + (s.x - wheelCenter.x) * gain
-            guard let updated = SelectionLogic.updatedLinearSelection(
-                rawPosition: raw,
-                current: selectedIndex,
-                count: spaces.count,
-                hysteresis: 0.15
-            ) else { return }
-            selectedIndex = updated
-            settings.performHaptic()
-            return
-        }
-
-        // Hand-relative compass: translate so the activation point becomes
-        // the center SelectionLogic expects at (0.5, 0.5).
-        let rx = s.x - wheelCenter.x + 0.5
-        let ry = s.y - wheelCenter.y + 0.5
-
-        guard hypot(rx - 0.5, ry - 0.5) > settings.deadZone,
-              let bearing = SelectionLogic.bearing(x: rx, y: ry),
-              let updated = SelectionLogic.updatedSelection(
-                  bearing: bearing,
-                  current: selectedIndex,
-                  count: spaces.count,
-                  hysteresisDegrees: settings.hysteresisDegrees
-              ) else { return }
-
+        // Horizontal mapping anchored at the activation point: elasticity
+        // (dockSpan) is the percent of the pad width that sweeps through
+        // all spaces. Lower span = snappier.
+        let gain = Double(spaces.count) / (settings.dockSpan / 100.0)
+        let position = Double(dockAnchorIndex) + (s.x - wheelCenter.x) * gain
+        guard let updated = SelectionLogic.updatedLinearSelection(
+            rawPosition: position,
+            current: selectedIndex,
+            count: spaces.count,
+            hysteresis: 0.15
+        ) else { return }
         selectedIndex = updated
         settings.performHaptic()
     }

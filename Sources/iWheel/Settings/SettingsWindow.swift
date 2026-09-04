@@ -41,30 +41,9 @@ struct SettingsView: View {
                 ShortcutRecorderRow(settings: settings)
             }
             Section("Appearance") {
-                VStack(alignment: .leading, spacing: 4) {
-                    Picker(selection: $settings.layout) {
-                        Text("Wheel").tag(SettingsStore.Layout.wheel)
-                        Text("Dock").tag(SettingsStore.Layout.dock)
-                    } label: {
-                        Text("Layout")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .pickerStyle(.segmented)
-                    Text("Wheel arranges your spaces in a circle around your fingers. Dock lays them in a horizontal row that magnifies the highlighted one.")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.vertical, 2)
-                if settings.layout == .wheel {
-                    setting("Ring size",
-                            caption: "How wide the circle of spaces is on screen.",
-                            value: $settings.ringRadius, in: 80...240, format: "%.0f pt", step: 10)
-                } else {
-                    setting("Card spacing",
-                            caption: "The distance between space cards in the dock row.",
-                            value: $settings.dockSpacing, in: 100...220, format: "%.0f pt", step: 10)
-                }
+                setting("Card spacing",
+                        caption: "The distance between space cards in the dock row.",
+                        value: $settings.dockSpacing, in: 100...220, format: "%.0f pt", step: 10)
                 setting("Card size",
                         caption: "The base size of each space card before any zoom.",
                         value: $settings.cardWidth, in: 60...140, format: "%.0f pt", step: 10)
@@ -73,18 +52,9 @@ struct SettingsView: View {
                         value: $settings.zoomScale, in: 1.1...2.5, format: "%.2fx", step: 0.1)
             }
             Section("Navigation") {
-                if settings.layout == .wheel {
-                    setting("Movement threshold",
-                            caption: "How much finger travel it takes before the highlight jumps to a nearby space. Higher is steadier, lower is snappier.",
-                            value: $settings.hysteresisDegrees, in: 0...15, format: "%.0f deg")
-                    setting("Center dead zone",
-                            caption: "A small area around where your fingers start, ignored while sliding.",
-                            value: $settings.deadZone, in: 0.03...0.20, format: "%.2f")
-                } else {
-                    setting("Elasticity",
-                            caption: "How much of the trackpad you sweep to slide through all your spaces. Lower is snappier, higher gives finer control.",
-                            value: $settings.dockSpan, in: 15...70, format: "%.0f%%", step: 5)
-                }
+                setting("Elasticity",
+                        caption: "How much of the trackpad you sweep to slide through all your spaces. Lower is snappier, higher gives finer control.",
+                        value: $settings.dockSpan, in: 15...70, format: "%.0f%%", step: 5)
                 VStack(alignment: .leading, spacing: 4) {
                     Picker(selection: $settings.hapticStyle) {
                         ForEach(SettingsStore.HapticStyle.allCases) { style in

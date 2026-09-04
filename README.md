@@ -77,12 +77,12 @@ its number.
 ## Settings
 
 Click the menu bar icon (three stacked cards) > Settings. Every
-control has a plain-language description: layout (wheel or a
-dock-style row), activation hold, the open shortcut (recordable),
-card size, highlight zoom, ring size or card spacing and elasticity
-depending on the layout, movement threshold, dead zone, haptic
-strength, open at login. A Help window in the same menu walks
-through the whole flow.
+control has a plain-language description: activation hold, the open
+shortcut (recordable), navigation finger count, card spacing, card
+size, highlight zoom, elasticity, haptic strength, open at login. A
+Diagnostics section shows the three permissions at a glance with a
+direct route to the right System Settings pane. A Help window in the
+same menu walks through the whole flow.
 
 Preferences are stored in `~/Library/Preferences/iWheel.plist`.
 

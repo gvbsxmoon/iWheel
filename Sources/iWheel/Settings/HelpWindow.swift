@@ -22,7 +22,7 @@ struct HelpView: View {
                 Divider()
 
                 step("Good to know",
-                     "Space previews are snapshots taken as you visit them; spaces you have not visited yet show your wallpaper. Layout, sizes, haptics and the shortcut are all in Settings. iWheel never changes your Mac's gestures.")
+                     "Space previews are snapshots taken as you visit them; spaces you have not visited yet show your wallpaper. Sizes, haptics and the shortcut are all in Settings. iWheel never changes your Mac's gestures.")
             }
             .padding(24)
         }
