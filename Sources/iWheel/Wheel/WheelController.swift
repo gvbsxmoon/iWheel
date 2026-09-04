@@ -67,6 +67,7 @@ final class WheelController: ObservableObject {
         self.spaceManager = spaceManager
         self.snapshots = snapshots
         self.settings = settings
+        snapshots.overlayIsVisible = { [weak overlay = self.overlay] in overlay?.isVisible ?? false }
         blocker.onSwallowedClick = { [weak self] in
             guard let self, self.state == .wheel else { return }
             self.commit()
@@ -202,9 +203,6 @@ final class WheelController: ObservableObject {
         blocker.enable()
         cursor.hide()
         settings.performHaptic()
-        // Refresh the current desktop's preview right away: our windows are
-        // excluded from the capture, so the wheel itself is not in the shot.
-        Task { await snapshots.captureCurrent() }
 
         watchdog = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             Task { @MainActor in

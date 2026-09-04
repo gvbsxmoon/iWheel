@@ -12,9 +12,11 @@ struct SpaceInfo: Identifiable, Equatable {
 final class SpaceManager {
     private typealias MainConnectionFn = @convention(c) () -> Int32
     private typealias CopySpacesFn = @convention(c) (Int32) -> Unmanaged<CFArray>?
+    private typealias IsAnimatingFn = @convention(c) (Int32, CFString) -> Bool
 
     private let connection: Int32
     private let copySpaces: CopySpacesFn
+    private let isAnimating: IsAnimatingFn?
 
     init() throws {
         guard let handle = dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", RTLD_NOW) else {
@@ -27,6 +29,19 @@ final class SpaceManager {
         }
         connection = unsafeBitCast(mainSym, to: MainConnectionFn.self)()
         copySpaces = unsafeBitCast(copySym, to: CopySpacesFn.self)
+        // Optional: used to time snapshot captures, absence only degrades.
+        isAnimating = (dlsym(handle, "SLSManagedDisplayIsAnimating")).map {
+            unsafeBitCast($0, to: IsAnimatingFn.self)
+        }
+    }
+
+    var canDetectAnimation: Bool { isAnimating != nil }
+
+    /// True while the space-switch slide animation is running.
+    func displayIsAnimating() -> Bool {
+        guard let isAnimating,
+              let uuid = displays().first?["Display Identifier"] as? String else { return false }
+        return isAnimating(connection, uuid as CFString)
     }
 
     /// User spaces (type 0) on the first display, in Mission Control order.

@@ -43,6 +43,8 @@ final class OverlayWindowController {
         panel.orderFrontRegardless()
     }
 
+    var isVisible: Bool { panel?.isVisible ?? false }
+
     func hide() {
         panel?.orderOut(nil)
     }

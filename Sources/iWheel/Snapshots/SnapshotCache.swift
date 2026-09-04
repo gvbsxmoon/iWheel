@@ -3,8 +3,9 @@ import ScreenCaptureKit
 
 /// Mission Control-style previews: cached snapshots, not live feeds.
 /// A frame is captured every time the active space changes (plus a slow
-/// periodic refresh), so each desktop shows how it looked the last time
+/// periodic refresh), so each space shows how it looked the last time
 /// the system displayed it - same perceived behavior as the native thumbnails.
+/// Snapshots live in RAM only and are purged on lock and sleep.
 @MainActor
 final class SnapshotCache: ObservableObject {
     @Published private(set) var images: [UInt64: CGImage] = [:]
@@ -14,8 +15,11 @@ final class SnapshotCache: ObservableObject {
     @Published private(set) var wallpaper: CGImage?
 
     private let spaceManager: SpaceManager
+    /// Wired by the controller; captures never run while the wheel is up.
+    var overlayIsVisible: () -> Bool = { false }
     private var timer: Timer?
     private var capturing = false
+    private var screenIsPrivate = false
 
     init(spaceManager: SpaceManager) {
         self.spaceManager = spaceManager
@@ -28,33 +32,58 @@ final class SnapshotCache: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                // Let the switch animation settle before grabbing the frame.
-                try? await Task.sleep(nanoseconds: 400_000_000)
-                await self?.captureCurrent()
-                self?.refreshWallpaper()
+                guard let self else { return }
+                await self.waitForSwitchToSettle()
+                await self.waitWhileWheelIsOpen()
+                await self.captureCurrent()
+                self.refreshWallpaper()
             }
         }
-        // Privacy: do not keep desktop snapshots in RAM across a lock or
-        // sleep - whatever was on screen may be sensitive.
-        DistributedNotificationCenter.default().addObserver(
-            forName: Notification.Name("com.apple.screenIsLocked"),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.images.removeAll() }
-        }
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.screensDidSleepNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.images.removeAll() }
-        }
+
+        observePrivacyBoundary(DistributedNotificationCenter.default(), "com.apple.screenIsLocked", entering: true)
+        observePrivacyBoundary(DistributedNotificationCenter.default(), "com.apple.screenIsUnlocked", entering: false)
+        observePrivacyBoundary(NSWorkspace.shared.notificationCenter, NSWorkspace.screensDidSleepNotification.rawValue, entering: true)
+        observePrivacyBoundary(NSWorkspace.shared.notificationCenter, NSWorkspace.screensDidWakeNotification.rawValue, entering: false)
+
         timer = Timer.scheduledTimer(withTimeInterval: 6, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.captureCurrent() }
         }
         Task { await captureCurrent() }
         refreshWallpaper()
+    }
+
+    /// Shooting mid-slide stores a frame of two half desktops, so wait for
+    /// WindowServer to report the animation over (plus a small settle pad).
+    /// Without the private flag, fall back to a delay long enough for the
+    /// slowest slide.
+    private func waitForSwitchToSettle() async {
+        guard spaceManager.canDetectAnimation else {
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            return
+        }
+        var waitedMs = 0
+        while spaceManager.displayIsAnimating(), waitedMs < 1_500 {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            waitedMs += 50
+        }
+        try? await Task.sleep(nanoseconds: 150_000_000)
+    }
+
+    /// Locked or asleep screens must neither keep old snapshots (whatever
+    /// was on screen may be sensitive) nor produce new ones (the capture
+    /// would show the lock screen).
+    private func observePrivacyBoundary(_ center: NotificationCenter, _ name: String, entering: Bool) {
+        center.addObserver(forName: Notification.Name(name), object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.screenIsPrivate = entering
+                if entering {
+                    self.images.removeAll()
+                } else {
+                    await self.captureCurrent()
+                }
+            }
+        }
     }
 
     private func refreshWallpaper() {
@@ -65,8 +94,22 @@ final class SnapshotCache: ObservableObject {
         wallpaper = image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
     }
 
+    /// Reopening the wheel right after landing bars the post-switch shot
+    /// (captures never run while it is up), so wait for it to close
+    /// instead of dropping the shot - otherwise that space shows no
+    /// preview until the periodic refresh. The settle wait runs again
+    /// afterwards: closing the wheel usually starts the next switch, and
+    /// a landing frame must never come from mid-animation.
+    private func waitWhileWheelIsOpen() async {
+        while overlayIsVisible() {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        await waitForSwitchToSettle()
+    }
+
     func captureCurrent() async {
-        guard !capturing, let spaceID = spaceManager.currentSpaceID() else { return }
+        guard !capturing, !screenIsPrivate, !overlayIsVisible(),
+              let spaceID = spaceManager.currentSpaceID() else { return }
         capturing = true
         defer { capturing = false }
         do {
@@ -80,14 +123,32 @@ final class SnapshotCache: ObservableObject {
             config.height = Int(Double(display.height) * scale)
             config.showsCursor = false
 
-            // Excluding our own windows makes captures safe while the wheel
-            // overlay is visible, so the current desktop can refresh live.
-            let ourWindows = content.windows.filter { $0.owningApplication?.processID == getpid() }
-            let filter = SCContentFilter(display: display, excludingWindows: ourWindows)
+            // Excluding the whole app (not a window list) also covers our
+            // windows that appear between content enumeration and the shot,
+            // like the overlay right as the wheel opens.
+            let us = content.applications.filter { $0.processID == getpid() }
+            let filter = SCContentFilter(display: display, excludingApplications: us, exceptingWindows: [])
             let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+
+            // The shot is async: if the space changed mid-capture, storing
+            // it under the id read above would caption the wrong space.
+            guard spaceManager.currentSpaceID() == spaceID else { return }
+            // Exclusion only covers windows that existed at enumeration
+            // time: if the wheel opened between enumeration and the shot,
+            // it is in the frame with nothing excluding it. Drop that
+            // frame; a later capture replaces it.
+            guard !(overlayIsVisible() && us.isEmpty) else { return }
             images[spaceID] = image
+            prune()
         } catch {
             NSLog("iWheel: snapshot failed: \(String(describing: error))")
         }
+    }
+
+    /// Spaces deleted by the user leave orphaned entries behind; drop them
+    /// so long-running sessions do not accumulate dead images.
+    private func prune() {
+        let alive = Set(spaceManager.userSpaces().map(\.id))
+        images = images.filter { alive.contains($0.key) }
     }
 }
