@@ -287,11 +287,11 @@ final class WheelController: ObservableObject {
             // Fires the native permission modal that deep-links into System Settings.
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
             _ = AXIsProcessTrustedWithOptions(options)
-            hud.show("Accessibility permission needed: grant it in the window that just opened, then try again")
+            hud.show(SwitchFailure.accessibilityMissing.message)
             return
         }
         if target.index > switcher.maxReachableIndex {
-            hud.show("Space \(target.index) is beyond \(switcher.maxReachableIndex): not reachable via ctrl+N shortcuts")
+            hud.show(SwitchFailure.beyondReach(index: target.index, max: switcher.maxReachableIndex).message)
             return
         }
         switcher.switchTo(index: target.index)
@@ -313,13 +313,19 @@ final class WheelController: ObservableObject {
         overlay.hide()
     }
 
-    private func verifySwitch(to target: SpaceInfo) {
+    private func verifySwitch(to target: SpaceInfo, isRetry: Bool = false) {
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 800_000_000)
-            guard let self else { return }
-            if self.spaceManager.currentSpaceID() != target.id {
-                self.hud.show("Switch did not happen. Enable \"Switch to Desktop \(target.index)\" in System Settings > Keyboard > Shortcuts > Mission Control")
+            guard let self, self.spaceManager.currentSpaceID() != target.id else { return }
+            if isRetry {
+                self.hud.show(SwitchFailure.switchDidNotHappen(index: target.index).message)
+                return
             }
+            // The usual cause is a disabled Mission Control hotkey; repair
+            // and retry once silently before bothering the user.
+            self.switcher.prepare(desktopCount: max(target.index, self.spaces.count))
+            self.switcher.switchTo(index: target.index)
+            self.verifySwitch(to: target, isRetry: true)
         }
     }
 

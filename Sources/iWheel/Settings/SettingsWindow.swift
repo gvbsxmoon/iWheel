@@ -101,6 +101,7 @@ struct SettingsView: View {
                 }
                 .padding(.vertical, 2)
             }
+            DiagnosticsSection()
         }
         .formStyle(.grouped)
         .frame(width: 440, height: 660)
