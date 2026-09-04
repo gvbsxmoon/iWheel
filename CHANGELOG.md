@@ -3,6 +3,22 @@
 All notable changes to iWheel are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.6.0] - 2026-09-04
+
+### Changed
+- The space-preview system was rebuilt around one rule: a capture only
+  fires in a confirmed quiet moment. Previews could show another space
+  or a slice of a neighbor when a shot raced the slide animation or
+  landed during an interactive three-finger drag, where the screen
+  shows two half spaces for as long as the fingers hold. Captures now
+  never run during a multi-finger gesture, until things settle after a
+  switch or a finger lift, while the switcher or Mission Control is on
+  screen, or behind the lock screen - and a frame that fails
+  validation is discarded and retaken instead of stored
+- The capture decision logic is now a pure, unit-tested policy
+  (iWheelCore), and the snapshot system is split into small parts:
+  observer, policy, capturer, store
+
 ## [1.5.0] - 2026-09-04
 
 ### Added
