@@ -22,8 +22,13 @@ import Testing
     }
 
     @Test func repairLeavesEnabledEntriesUntouched() {
-        // A user-customized binding must survive the repair.
-        let custom: [String: Any] = ["118": ["enabled": true, "value": ["type": "standard", "parameters": [65535, 122, 1048576]]]]
+        // A user-customized binding must survive the repair. The move
+        // shortcuts are enabled too, so there is nothing to add.
+        let custom: [String: Any] = [
+            "118": ["enabled": true, "value": ["type": "standard", "parameters": [65535, 122, 1048576]]],
+            "79": ["enabled": true],
+            "81": ["enabled": true],
+        ]
         let (root, changed) = HotkeyRepair.repaired(root: custom, desktopCount: 1)
         #expect(!changed)
         let params = ((root["118"] as? [String: Any])?["value"] as? [String: Any])?["parameters"] as? [Int]
