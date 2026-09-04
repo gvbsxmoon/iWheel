@@ -4,12 +4,8 @@ Hold 3 fingers on the trackpad. Your Spaces appear around your hand.
 Slide, release, you are there. Never lift your hand.
 
 macOS gives you one flat swipe between Spaces. Fine with 3, painful
-with 8. iWheel puts every Space one small motion away: a wheel around
-your fingers, or a dock row if that is more your thing. The name comes
-from the iPod click wheel, the last input device that made moving
-around feel this good.
-
-Up to 10 Spaces.
+with 8. iWheel puts every Space one small motion away: a dock inspired
+to the iPod's CoverFlow View.
 
 ![iWheel demo](assets/demo.gif)
 
@@ -29,8 +25,8 @@ Up to 10 Spaces.
 ## Install
 
 **Download**: grab `iWheel-x.y.z.zip` from the Releases page, unzip,
-move `iWheel.app` to `/Applications`, open it. The app is ad-hoc signed:
-on first open, right-click > Open to get past Gatekeeper.
+move `iWheel.app` to `/Applications`, open it. The app is *ad-hoc signed*:
+on first open, right-click > Open *to get past Gatekeeper*.
 
 **Build from source**:
 
@@ -56,7 +52,7 @@ Settings.
 | Gesture | Action |
 |---|---|
 | Rest 3 fingers still (~0.15s) | Open the switcher |
-| ctrl+option+cmd+W | Open it from the keyboard - stays open until you act |
+| ctrl+option+cmd+W | Open it from the keyboard - stays open until you act. You can edit the shortcut in the settings |
 | Keep sliding (3 fingers, or 2 in Settings) | Move the highlight through your Spaces |
 | Tab | Step the highlight one Space at a time |
 | Esc | Close without switching |
@@ -65,14 +61,10 @@ Settings.
 | Release without moving | Nothing happens (cancel) |
 | Quick 3-finger swipe | Wheel closed: your normal macOS switch. Wheel open: ignored, the wheel stays in charge |
 
-Pointing is relative to where your fingers were when the switcher
-opened, so small movements are enough. The pointer is hidden and
-clicks/scrolls do not reach the apps underneath while it is open.
-
 Space previews are cached snapshots (like Mission Control's own
 thumbnails): each Space shows how it looked the last time you were
-there. A Space you have not visited yet shows your wallpaper with
-its number.
+there. A Space you have not visited yet shows your wallpaper with its number.
+*The mechanism is still work in progress and might not work as expected.*
 
 ## Settings
 
@@ -80,8 +72,8 @@ Click the menu bar icon (three stacked cards) > Settings. Every
 control has a plain-language description: activation hold, the open
 shortcut (recordable), navigation finger count, scroll direction
 (natural or inverted), card spacing, card
-size, highlight zoom, elasticity, haptic strength, open at login. A
-Diagnostics section shows the three permissions at a glance with a
+size, highlight zoom, elasticity, haptic strength, open at login.
+A Diagnostics section shows the three permissions at a glance with a
 direct route to the right System Settings pane. A Help window in the
 same menu walks through the whole flow.
 

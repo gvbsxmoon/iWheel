@@ -51,6 +51,7 @@ final class WheelController: ObservableObject {
     private var latched = false
     private var latchedAwaitingCenter = false
     private var hasNavigated = false
+    private var reportedGestureActive = false
 
     let settings: SettingsStore
     private let spaceManager: SpaceManager
@@ -59,13 +60,12 @@ final class WheelController: ObservableObject {
     private let blocker = PointerEventBlocker()
     private let cursor = CursorHider()
     private let hud = HUDController()
-    let snapshots: SnapshotCache
+    let snapshots: SnapshotCoordinator
 
-    init(spaceManager: SpaceManager, snapshots: SnapshotCache, settings: SettingsStore) {
+    init(spaceManager: SpaceManager, snapshots: SnapshotCoordinator, settings: SettingsStore) {
         self.spaceManager = spaceManager
         self.snapshots = snapshots
         self.settings = settings
-        snapshots.overlayIsVisible = { [weak overlay = self.overlay] in overlay?.isVisible ?? false }
         blocker.onSwallowedClick = { [weak self] in
             guard let self, self.state == .wheel else { return }
             self.commit()
@@ -97,6 +97,14 @@ final class WheelController: ObservableObject {
 
     private func process(_ all: [MultitouchMonitor.TouchPoint]) {
         let touching = all.filter { $0.state >= 3 && $0.state <= 5 }
+
+        // 3+ fingers can drive an interactive space drag: the capture
+        // system must hold fire from first contact until settle after lift.
+        let gestureActive = touching.count >= 3
+        if gestureActive != reportedGestureActive {
+            reportedGestureActive = gestureActive
+            snapshots.gestureChanged(active: gestureActive)
+        }
 
         switch state {
         case .idle:
@@ -203,10 +211,11 @@ final class WheelController: ObservableObject {
         state = .wheel
         switcher.prepare(desktopCount: spaces.compactMap(\.desktopNumber).count)
 
-        overlay.show(controller: self, snapshots: snapshots, settings: settings)
+        overlay.show(controller: self, snapshots: snapshots.store, settings: settings)
         blocker.enable()
         cursor.hide()
         settings.performHaptic()
+        snapshots.wheelDidOpen()
 
         watchdog = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -311,6 +320,7 @@ final class WheelController: ObservableObject {
         blocker.disable()
         cursor.show()
         overlay.hide()
+        snapshots.wheelDidClose()
     }
 
     private func verifySwitch(to target: SpaceInfo, hops: Int, isRetry: Bool) {

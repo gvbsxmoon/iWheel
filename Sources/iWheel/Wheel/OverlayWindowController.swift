@@ -5,7 +5,7 @@ import SwiftUI
 final class OverlayWindowController {
     private var panel: NSPanel?
 
-    func show(controller: WheelController, snapshots: SnapshotCache, settings: SettingsStore) {
+    func show(controller: WheelController, snapshots: SnapshotStore, settings: SettingsStore) {
         if panel == nil {
             let p = NSPanel(
                 contentRect: .zero,

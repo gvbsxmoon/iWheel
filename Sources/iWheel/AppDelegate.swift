@@ -6,7 +6,7 @@ import IOKit.hid
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var wheel: WheelController?
-    private var snapshots: SnapshotCache?
+    private var snapshots: SnapshotCoordinator?
     private let settings = SettingsStore()
     private lazy var settingsWindow = SettingsWindowController(settings: settings)
     private lazy var helpWindow = HelpWindowController(settings: settings)
@@ -18,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             let spaceManager = try SpaceManager()
-            let snapshots = SnapshotCache(spaceManager: spaceManager)
+            let snapshots = SnapshotCoordinator(spaceManager: spaceManager)
             let wheel = WheelController(spaceManager: spaceManager, snapshots: snapshots, settings: settings)
             self.snapshots = snapshots
             self.wheel = wheel

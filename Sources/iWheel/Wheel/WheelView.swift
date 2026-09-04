@@ -17,7 +17,7 @@ struct WheelView: View {
     }
 
     @ObservedObject var controller: WheelController
-    @ObservedObject var snapshots: SnapshotCache
+    @ObservedObject var snapshots: SnapshotStore
     @ObservedObject var settings: SettingsStore
 
     var body: some View {

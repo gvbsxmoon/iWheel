@@ -56,7 +56,7 @@ final class SettingsStore: ObservableObject {
     init() {
         // 2.0 is the new default; migrate values saved when 1.5 was the default.
         let storedZoom = defaults.object(forKey: "zoomScale") as? Double
-        zoomScale = (storedZoom == nil || storedZoom == 1.5) ? 2.0 : storedZoom!
+        zoomScale = (storedZoom == nil || storedZoom == 1.5) ? 2.3 : storedZoom!
         // 0.15 is the new default; migrate values saved under the old one.
         let storedHold = defaults.object(forKey: "holdSeconds") as? Double
         holdSeconds = (storedHold == nil || storedHold == 0.35) ? 0.15 : storedHold!
@@ -64,9 +64,9 @@ final class SettingsStore: ObservableObject {
         // 150 / 120 / 25 are the new defaults; migrate values saved under the
         // previous defaults and clamp spacing into the 100...220 range.
         let storedSpacing = defaults.object(forKey: "dockSpacing") as? Double
-        dockSpacing = (storedSpacing == nil || storedSpacing == 84 || storedSpacing == 120) ? 150 : min(max(storedSpacing!, 100), 220)
+        dockSpacing = (storedSpacing == nil || storedSpacing == 84 || storedSpacing == 120) ? 120 : min(max(storedSpacing!, 100), 220)
         let storedCard = defaults.object(forKey: "cardWidth") as? Double
-        cardWidth = (storedCard == nil || storedCard == 68 || storedCard == 100) ? 120 : storedCard!
+        cardWidth = (storedCard == nil || storedCard == 68 || storedCard == 100) ? 100 : storedCard!
         let storedSpan = defaults.object(forKey: "dockSpan") as? Double
         dockSpan = (storedSpan == nil || storedSpan == 35) ? 25 : storedSpan!
         scrollDirection = ScrollDirection(rawValue: defaults.string(forKey: "scrollDirection") ?? "") ?? .natural
