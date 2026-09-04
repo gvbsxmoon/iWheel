@@ -187,7 +187,13 @@ final class WheelController: ObservableObject {
     private func openWheel(at activationCenter: (x: Double, y: Double)) {
         resetHold()
         spaces = spaceManager.userSpaces()
-        guard !spaces.isEmpty else { return }
+        // Mission Control owns the screen and our panel would open unseen
+        // behind it; refuse and clear any latch the hotkey path just set.
+        guard !spaces.isEmpty, !MissionControl.isActive else {
+            latched = false
+            latchedAwaitingCenter = false
+            return
+        }
 
         selectedIndex = spaces.firstIndex(where: { $0.isCurrent }) ?? 0
         dockAnchorIndex = selectedIndex
