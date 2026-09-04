@@ -148,7 +148,7 @@ final class SnapshotCache: ObservableObject {
     /// Spaces deleted by the user leave orphaned entries behind; drop them
     /// so long-running sessions do not accumulate dead images.
     private func prune() {
-        let alive = Set(spaceManager.userSpaces().map(\.id))
+        let alive = Set(spaceManager.allSpaces().map(\.id))
         images = images.filter { alive.contains($0.key) }
     }
 }

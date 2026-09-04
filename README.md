@@ -93,8 +93,9 @@ iWheel needs three permissions, each for one specific job:
 
 - **Input Monitoring** - reads the raw trackpad stream (finger positions
   only). This is how the wheel knows where your fingers are.
-- **Accessibility** - posts the synthetic ctrl+N keystroke that performs
-  the actual desktop switch, and runs the event filter below.
+- **Accessibility** - posts the synthetic Mission Control keystrokes
+  (ctrl+N, ctrl+arrows) that perform the actual switch, and runs the
+  event filter below.
 - **Screen Recording** - takes the desktop snapshots used as previews.
 
 **The keyboard filter, stated plainly:** while the switcher is open
@@ -114,11 +115,13 @@ combination - no event tap exists while the switcher is closed.
 never leave your machine, and are purged when the screen locks or
 sleeps.
 
-**System settings it touches:** if your "Switch to Desktop N" shortcuts
-(System Settings > Keyboard > Shortcuts > Mission Control) are disabled
-- the default on new Macs - iWheel enables them, because they are the
-mechanism it switches with. It never deletes or modifies any other
-shortcut, and never touches your trackpad gesture settings.
+**System settings it touches:** if your "Switch to Desktop N" or "Move
+left/right a space" shortcuts (System Settings > Keyboard > Shortcuts >
+Mission Control) are disabled - the default on new Macs - iWheel
+enables them, because they are the mechanism it switches with: a direct
+jump for desktops 1-10, one hop per space for fullscreen apps and
+desktops past 10. It never deletes or modifies any other shortcut, and
+never touches your trackpad gesture settings.
 
 **No network, no analytics, no telemetry.** The app makes zero network
 connections.
@@ -130,11 +133,8 @@ release needs re-verification. See [SECURITY.md](SECURITY.md).
 
 ## Known limitations
 
-- Max 10 Spaces reachable (ctrl+1..9 and ctrl+0 have no defaults
-  beyond that)
 - Single display: with multiple monitors the switcher shows and
   switches the first display's Spaces
-- Fullscreen-app Spaces are not shown (they have no ctrl+N shortcut)
 - The binary is unsigned: macOS ties permissions to the code hash, so
   rebuilding may reset them - re-grant and relaunch
 

@@ -65,8 +65,9 @@ struct WheelView: View {
             .offset(x: carouselShift)
             .mask(edgeFade(active: overflowing).frame(width: size.width, height: size.height))
 
-            Text("\(controller.selectedIndex + 1)")
+            Text(controller.spaces.indices.contains(controller.selectedIndex) ? controller.spaces[controller.selectedIndex].label : "")
                 .font(.system(size: 32, weight: .semibold, design: .rounded))
+                .lineLimit(1)
                 .foregroundStyle(.white)
                 .contentTransition(.numericText())
                 .shadow(color: .black.opacity(0.6), radius: 6)
@@ -102,8 +103,10 @@ struct WheelView: View {
                 Image(decorative: wallpaper, scale: 1)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                Text("\(index + 1)")
+                Text(space.label)
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .padding(.horizontal, 6)
                     .foregroundStyle(.white.opacity(0.9))
                     .shadow(color: .black.opacity(0.7), radius: 3)
             } else {
@@ -112,8 +115,10 @@ struct WheelView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                Text("\(index + 1)")
+                Text(space.label)
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .padding(.horizontal, 6)
                     .foregroundStyle(.white.opacity(0.7))
             }
         }

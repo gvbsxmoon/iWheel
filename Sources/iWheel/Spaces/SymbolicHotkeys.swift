@@ -20,6 +20,12 @@ final class SymbolicHotkeys {
         return Binding(keycode: CGKeyCode(b.keycode), flags: CGEventFlags(rawValue: UInt64(b.modifiers)))
     }
 
+    /// The configured "move a space" binding, honoring user customizations.
+    func moveBinding(right: Bool) -> Binding? {
+        guard let b = HotkeyRepair.moveBinding(in: readRoot(), right: right) else { return nil }
+        return Binding(keycode: CGKeyCode(b.keycode), flags: CGEventFlags(rawValue: UInt64(b.modifiers)))
+    }
+
     /// Enables missing or disabled hotkeys for desktops 1..count natively,
     /// then reloads settings. Cheap no-op when everything is enabled.
     @discardableResult

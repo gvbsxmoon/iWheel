@@ -1,9 +1,18 @@
+import AppKit
 import Foundation
 
 struct SpaceInfo: Identifiable, Equatable {
     let id: UInt64
-    let index: Int      // 1-based position among user spaces on the main display
+    /// 1-based number among numbered desktops, in Mission Control order.
+    /// nil for fullscreen-app spaces, which macOS does not number.
+    let desktopNumber: Int?
+    /// Localized app name for fullscreen-app spaces, nil for desktops.
+    let appName: String?
     let isCurrent: Bool
+
+    var isFullscreen: Bool { desktopNumber == nil }
+    /// What the user calls this space: "3" or the app's name.
+    var label: String { appName ?? desktopNumber.map(String.init) ?? "?" }
 }
 
 /// Reads the Spaces topology from the private SkyLight framework.
@@ -44,25 +53,29 @@ final class SpaceManager {
         return isAnimating(connection, uuid as CFString)
     }
 
-    /// User spaces (type 0) on the first display, in Mission Control order.
-    /// Fullscreen-app spaces are skipped: they have no ctrl+N shortcut.
-    func userSpaces() -> [SpaceInfo] {
+    /// All switchable spaces on the first display, in Mission Control
+    /// order: numbered desktops (type 0) and fullscreen apps (type 4,
+    /// named after their owning process).
+    func allSpaces() -> [SpaceInfo] {
         guard let display = displays().first else { return [] }
         let currentID = ((display["Current Space"] as? [String: Any])?["id64"] as? NSNumber)?.uint64Value
         let raw = display["Spaces"] as? [[String: Any]] ?? []
 
         var result: [SpaceInfo] = []
-        var userIndex = 0
+        var desktopNumber = 0
         for dict in raw {
-            let type = (dict["type"] as? NSNumber)?.intValue ?? 0
-            guard type == 0 else { continue }
             guard let id = (dict["id64"] as? NSNumber)?.uint64Value else { continue }
-            userIndex += 1
-            result.append(SpaceInfo(
-                id: id,
-                index: userIndex,
-                isCurrent: id == currentID
-            ))
+            switch (dict["type"] as? NSNumber)?.intValue ?? 0 {
+            case 0:
+                desktopNumber += 1
+                result.append(SpaceInfo(id: id, desktopNumber: desktopNumber, appName: nil, isCurrent: id == currentID))
+            case 4:
+                let pid = (dict["pid"] as? NSNumber)?.int32Value
+                let name = pid.flatMap { NSRunningApplication(processIdentifier: $0)?.localizedName }
+                result.append(SpaceInfo(id: id, desktopNumber: nil, appName: name ?? "App", isCurrent: id == currentID))
+            default:
+                continue
+            }
         }
         return result
     }

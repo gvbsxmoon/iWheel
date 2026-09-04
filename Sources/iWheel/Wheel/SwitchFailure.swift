@@ -17,24 +17,26 @@ enum SettingsPane: String {
 /// user can act on. One failure, one sentence, one place to fix it.
 enum SwitchFailure {
     case accessibilityMissing
-    case beyondReach(index: Int, max: Int)
-    case switchDidNotHappen(index: Int)
+    /// viaDirectJump: the switch used "Switch to Desktop N"; otherwise it
+    /// hopped with "Move left/right a space". The message names the
+    /// shortcut that actually failed.
+    case switchDidNotHappen(target: SpaceInfo, viaDirectJump: Bool)
 
     var message: String {
         switch self {
         case .accessibilityMissing:
             return "iWheel needs the Accessibility permission to switch spaces. Grant it in the window that just opened, then try again."
-        case .beyondReach(let index, let max):
-            return "Space \(index) is out of reach: macOS keyboard shortcuts stop at space \(max), so iWheel supports up to \(max) spaces."
-        case .switchDidNotHappen(let index):
-            return "The switch did not happen. Open System Settings > Keyboard > Keyboard Shortcuts > Mission Control and turn on \"Switch to Desktop \(index)\", then try again."
+        case .switchDidNotHappen(let target, let viaDirectJump):
+            let shortcut = viaDirectJump
+                ? "\"Switch to Desktop \(target.desktopNumber ?? 1)\""
+                : "\"Move left a space\" and \"Move right a space\""
+            return "The switch did not happen. Open System Settings > Keyboard > Keyboard Shortcuts > Mission Control and turn on \(shortcut), then try again."
         }
     }
 
     var pane: SettingsPane? {
         switch self {
         case .accessibilityMissing: return .accessibility
-        case .beyondReach: return nil
         case .switchDidNotHappen: return .keyboard
         }
     }

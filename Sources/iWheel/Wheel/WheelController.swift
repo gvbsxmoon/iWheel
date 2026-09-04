@@ -184,7 +184,7 @@ final class WheelController: ObservableObject {
 
     private func openWheel(at activationCenter: (x: Double, y: Double)) {
         resetHold()
-        spaces = spaceManager.userSpaces()
+        spaces = spaceManager.allSpaces()
         // Mission Control owns the screen and our panel would open unseen
         // behind it; refuse and clear any latch the hotkey path just set.
         guard !spaces.isEmpty, !MissionControl.isActive else {
@@ -201,7 +201,7 @@ final class WheelController: ObservableObject {
         tabLockArm = false
         tabLockPoint = nil
         state = .wheel
-        switcher.prepare(desktopCount: spaces.count)
+        switcher.prepare(desktopCount: spaces.compactMap(\.desktopNumber).count)
 
         overlay.show(controller: self, snapshots: snapshots, settings: settings)
         blocker.enable()
@@ -276,12 +276,26 @@ final class WheelController: ObservableObject {
             hud.show(SwitchFailure.accessibilityMissing.message)
             return
         }
-        if target.index > switcher.maxReachableIndex {
-            hud.show(SwitchFailure.beyondReach(index: target.index, max: switcher.maxReachableIndex).message)
-            return
+        performSwitch(to: target, isRetry: false)
+    }
+
+    /// Numbered desktops within ctrl+N reach jump directly; fullscreen
+    /// apps and desktops past 10 hop there with the move-a-space shortcut,
+    /// which macOS chains into one continuous slide.
+    private func performSwitch(to target: SpaceInfo, isRetry: Bool) {
+        var hops = 0
+        if let n = target.desktopNumber, n <= switcher.maxDirectIndex {
+            switcher.switchTo(index: n)
+        } else {
+            let current = spaceManager.allSpaces()
+            guard let from = current.firstIndex(where: { $0.isCurrent }),
+                  let to = current.firstIndex(where: { $0.id == target.id }),
+                  from != to else { return }
+            hops = to - from
+            let steps = hops
+            Task { await switcher.move(steps: steps) }
         }
-        switcher.switchTo(index: target.index)
-        verifySwitch(to: target)
+        verifySwitch(to: target, hops: abs(hops), isRetry: isRetry)
     }
 
     private func close() {
@@ -299,19 +313,22 @@ final class WheelController: ObservableObject {
         overlay.hide()
     }
 
-    private func verifySwitch(to target: SpaceInfo, isRetry: Bool = false) {
+    private func verifySwitch(to target: SpaceInfo, hops: Int, isRetry: Bool) {
         Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 800_000_000)
+            // Hops chain their slide animations, so the deadline grows
+            // with the distance travelled.
+            try? await Task.sleep(nanoseconds: 800_000_000 + UInt64(hops) * 150_000_000)
             guard let self, self.spaceManager.currentSpaceID() != target.id else { return }
+            let direct = (target.desktopNumber ?? Int.max) <= self.switcher.maxDirectIndex
             if isRetry {
-                self.hud.show(SwitchFailure.switchDidNotHappen(index: target.index).message)
+                self.hud.show(SwitchFailure.switchDidNotHappen(target: target, viaDirectJump: direct).message)
                 return
             }
-            // The usual cause is a disabled Mission Control hotkey; repair
-            // and retry once silently before bothering the user.
-            self.switcher.prepare(desktopCount: max(target.index, self.spaces.count))
-            self.switcher.switchTo(index: target.index)
-            self.verifySwitch(to: target, isRetry: true)
+            // The usual cause is a disabled Mission Control shortcut;
+            // repair and retry once silently before bothering the user.
+            // The retry re-plans from the space we actually ended up on.
+            self.switcher.prepare(desktopCount: self.spaces.compactMap(\.desktopNumber).count)
+            self.performSwitch(to: target, isRetry: true)
         }
     }
 

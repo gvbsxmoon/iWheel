@@ -53,4 +53,19 @@ import Testing
         #expect(root.isEmpty)
         #expect(!changed)
     }
+
+    @Test func repairEnablesMoveShortcuts() {
+        let (root, changed) = HotkeyRepair.repaired(root: [:], desktopCount: 1)
+        #expect(changed)
+        let left = (root["79"] as? [String: Any])?["value"] as? [String: Any]
+        let right = (root["81"] as? [String: Any])?["value"] as? [String: Any]
+        #expect(left?["parameters"] as? [Int] == [65535, 123, 262144])
+        #expect(right?["parameters"] as? [Int] == [65535, 124, 262144])
+    }
+
+    @Test func moveBindingHonorsCustomization() {
+        let root: [String: Any] = ["81": ["enabled": true, "value": ["type": "standard", "parameters": [65535, 47, 1048576]]]]
+        #expect(HotkeyRepair.moveBinding(in: root, right: true) == HotkeyRepair.Binding(keycode: 47, modifiers: 1048576))
+        #expect(HotkeyRepair.moveBinding(in: root, right: false) == nil)
+    }
 }
