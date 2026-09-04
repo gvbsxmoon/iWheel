@@ -3,6 +3,22 @@
 All notable changes to iWheel are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] - 2026-09-04
+
+### Added
+- Fullscreen apps are now part of the switcher: they appear as cards
+  named after their app, get previews like any other space, and are
+  reachable like any other space
+
+### Changed
+- Spaces without a direct ctrl+N shortcut - fullscreen apps and
+  desktops past 10 - are reached by hopping with the system's "Move
+  left/right a space" shortcut, chained into one continuous slide.
+  Desktops 1-10 keep their direct jump. The 10-space ceiling and its
+  error message are gone
+- If those move shortcuts are disabled, iWheel enables them the same
+  way it already handles "Switch to Desktop N"
+
 ## [1.4.0] - 2026-09-04
 
 ### Added
