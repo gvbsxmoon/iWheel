@@ -38,6 +38,21 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.vertical, 2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Picker(selection: $settings.scrollDirection) {
+                        Text("Natural").tag(SettingsStore.ScrollDirection.natural)
+                        Text("Inverted").tag(SettingsStore.ScrollDirection.inverted)
+                    } label: {
+                        Text("Scroll direction")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .pickerStyle(.segmented)
+                    Text("Natural slides the row like the system gesture: move left to reach the space on the right. Inverted moves the highlight with your fingers instead.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 2)
                 ShortcutRecorderRow(settings: settings)
             }
             Section("Appearance") {

@@ -246,9 +246,12 @@ final class WheelController: ObservableObject {
 
         // Horizontal mapping anchored at the activation point: elasticity
         // (dockSpan) is the percent of the pad width that sweeps through
-        // all spaces. Lower span = snappier.
+        // all spaces. Lower span = snappier. Natural drags the row like
+        // the system gesture (fingers left reach the space on the right);
+        // inverted moves the highlight with the fingers.
         let gain = Double(spaces.count) / (settings.dockSpan / 100.0)
-        let position = Double(dockAnchorIndex) + (s.x - wheelCenter.x) * gain
+        let direction: Double = settings.scrollDirection == .natural ? -1 : 1
+        let position = Double(dockAnchorIndex) + (s.x - wheelCenter.x) * gain * direction
         guard let updated = SelectionLogic.updatedLinearSelection(
             rawPosition: position,
             current: selectedIndex,

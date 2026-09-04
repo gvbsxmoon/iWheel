@@ -9,9 +9,17 @@ final class SettingsStore: ObservableObject {
         var id: String { rawValue }
     }
 
+    enum ScrollDirection: String, CaseIterable, Identifiable {
+        case natural, inverted
+        var id: String { rawValue }
+    }
+
     @Published var dockSpacing: Double { didSet { save() } }
     /// Percent of trackpad travel that slides through all spaces (dock).
     @Published var dockSpan: Double { didSet { save() } }
+    /// Natural follows the system gesture: fingers left reach the space on
+    /// the right. Inverted moves the highlight with the fingers.
+    @Published var scrollDirection: ScrollDirection { didSet { save() } }
     /// How many fingers navigate while the switcher is open (2 or 3).
     @Published var navFingers: Int { didSet { save() } }
     @Published var cardWidth: Double { didSet { save() } }
@@ -61,6 +69,7 @@ final class SettingsStore: ObservableObject {
         cardWidth = (storedCard == nil || storedCard == 68 || storedCard == 100) ? 120 : storedCard!
         let storedSpan = defaults.object(forKey: "dockSpan") as? Double
         dockSpan = (storedSpan == nil || storedSpan == 35) ? 25 : storedSpan!
+        scrollDirection = ScrollDirection(rawValue: defaults.string(forKey: "scrollDirection") ?? "") ?? .natural
         navFingers = defaults.object(forKey: "navFingers") as? Int ?? 3
         // Default shortcut: ctrl+option+cmd+W. 13 = kVK_ANSI_W,
         // 6400 = cmdKey(256) | optionKey(2048) | controlKey(4096).
@@ -92,6 +101,7 @@ final class SettingsStore: ObservableObject {
         defaults.set(hapticStyle.rawValue, forKey: "hapticStyle")
         defaults.set(dockSpacing, forKey: "dockSpacing")
         defaults.set(dockSpan, forKey: "dockSpan")
+        defaults.set(scrollDirection.rawValue, forKey: "scrollDirection")
         defaults.set(navFingers, forKey: "navFingers")
         defaults.set(cardWidth, forKey: "cardWidth")
         defaults.set(hotkeyKeyCode, forKey: "hotkeyKeyCode")

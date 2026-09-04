@@ -78,7 +78,8 @@ its number.
 
 Click the menu bar icon (three stacked cards) > Settings. Every
 control has a plain-language description: activation hold, the open
-shortcut (recordable), navigation finger count, card spacing, card
+shortcut (recordable), navigation finger count, scroll direction
+(natural or inverted), card spacing, card
 size, highlight zoom, elasticity, haptic strength, open at login. A
 Diagnostics section shows the three permissions at a glance with a
 direct route to the right System Settings pane. A Help window in the
